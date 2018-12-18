@@ -1,0 +1,1 @@
+Several icons are covered up by boxes. There are two of each icons. The user is to click on two boxes. If they are a pair, the boxes remain uncovered. Otherwise, the are covered once again. To give the user a hint, all boxes are uncovered at the beginning of the game, only to be quickly covered again.
