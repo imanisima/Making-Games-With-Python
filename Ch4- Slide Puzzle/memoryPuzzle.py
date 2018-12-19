@@ -27,6 +27,7 @@ navyBlue = (60, 60, 100)
 blue     = (0, 128, 0)
 white    = (255, 255, 255)
 red      = (128, 0, 0)
+reddish     = (238, 98, 98)
 green    = (0, 0, 128)
 yellow   = (255,255, 0)
 orange   = (255, 128, 0)
@@ -50,91 +51,156 @@ assert len(allColors) * len(allShapes) * 2 >= boardHeight * boardWidth, "Board i
 
 
 def main():
-    # frames per second
-    global fpsClock, displaysurf
+    global fpsClock, displaysurf, basicFont
+
     pygame.init()
     fpsClock = pygame.time.Clock()
     displaysurf = pygame.display.set_mode((windowWidth, windowHeight))
+    basicFont = pygame.font.Font("freesansbold.ttf", 16)
+    pygame.display.set_caption("Memory Game")
+
+    pygame.mixer.music.load("royalty.mp3")
+    pygame.mixer.music.play(-1, 0.0)
 
     # Capture mouse events
     mouse_x = 0
     mouse_y = 0
-    pygame.display.set_caption("Memory Game")
 
     mainBoard = getRandomizedBoard()
     revealedBoxes = generateRevealedBoxesData(False)
-
-    firstSelection = None  # stores the (x, y) of the first box clicked
-
+    firstSelection = None
     displaysurf.fill(bgColor)
-    startGameAnimation(mainBoard)
 
     while True:
-        mouseClicked = False
+        showStartScreen(mainBoard)
+        showShuffleMsg()
+        startGameAnimation(mainBoard)
 
-        displaysurf.fill(bgColor)
-        drawBoard(mainBoard, revealedBoxes)
+        while True:
+            mouseClicked = False
 
-        for event in pygame.event.get():
-            if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
-                pygame.quit()
-                sys.exit()
+            displaysurf.fill(bgColor)
+            showTitle()
+            drawBoard(mainBoard, revealedBoxes)
 
-            elif event.type == MOUSEMOTION:
-                mouse_x, mouse_y = event.pos
-            elif event.type == MOUSEBUTTONUP:
-                mouse_x, mouse_y = event.pos
-                mouseClicked = True
+            for event in pygame.event.get():
+                if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
+                    pygame.quit()
+                    sys.exit()
 
-        box_x, box_y = getBoxAtPixel(mouse_x, mouse_y)
-        if box_x is not None and box_y is not None:
-            # The mouse is currently over a box
-            if not revealedBoxes[box_x][box_y]:
-                drawHighlightBox(box_x, box_y)
+                elif event.type == MOUSEMOTION:
+                    mouse_x, mouse_y = event.pos
+                elif event.type == MOUSEBUTTONUP:
+                    mouse_x, mouse_y = event.pos
+                    mouseClicked = True
 
-            if not revealedBoxes[box_x][box_y] and mouseClicked:
-                revealBoxesAnimation(mainBoard, [(box_x, box_y)])
-                revealedBoxes[box_x][box_y] = True  # set box as now revealed
+            box_x, box_y = getBoxAtPixel(mouse_x, mouse_y)
+            if box_x is not None and box_y is not None:
+                # The mouse is currently over a box
+                if not revealedBoxes[box_x][box_y]:
+                    drawHighlightBox(box_x, box_y)
 
-                if firstSelection is None:  # curr box was the first box clicked
-                    firstSelection = (box_x, box_y)
+                if not revealedBoxes[box_x][box_y] and mouseClicked:
+                    revealBoxesAnimation(mainBoard, [(box_x, box_y)])
+                    revealedBoxes[box_x][box_y] = True  # set box as now revealed
 
-                else: # curr box was the second box clicked
-                    # check if there is a match
-                    icon1shape, icon1color = getShapeAndColor(mainBoard, firstSelection[0], firstSelection[1])
-                    icon2shape, icon2color = getShapeAndColor(mainBoard, box_x, box_y)
+                    if firstSelection is None:  # curr box was the first box clicked
+                        firstSelection = (box_x, box_y)
 
-                    if icon1shape != icon2shape or icon1color != icon2color:
-                        # Icons do not match -> recover them
-                        pygame.time.wait(1000) # 1000 milliseconds or 1 min
+                    else:  # curr box was the second box clicked
+                        # check if there is a match
+                        icon1shape, icon1color = getShapeAndColor(mainBoard, firstSelection[0], firstSelection[1])
+                        icon2shape, icon2color = getShapeAndColor(mainBoard, box_x, box_y)
 
-                        coverBoxesAnimation(mainBoard, [(firstSelection[0], firstSelection[1]), (box_x, box_y)])
-                        revealedBoxes[firstSelection[0]][firstSelection[1]] = False
-                        revealedBoxes[box_x][box_y] = False
+                        if icon1shape != icon2shape or icon1color != icon2color:
+                            # Icons do not match -> recover them
+                            pygame.time.wait(1000) # 1000 milliseconds or 1 min
 
-                    # Check if all pairs are found
-                    elif hasWon(revealedBoxes):
-                        gameWonAnimation(mainBoard)
-                        pygame.time.wait(2000)
+                            coverBoxesAnimation(mainBoard, [(firstSelection[0], firstSelection[1]), (box_x, box_y)])
+                            revealedBoxes[firstSelection[0]][firstSelection[1]] = False
+                            revealedBoxes[box_x][box_y] = False
 
-                        # Reset the board
-                        mainBoard = getRandomizedBoard()
-                        revealedBoxes = generateRevealedBoxesData(False)
+                        # Check if all pairs are found
+                        elif hasWon(revealedBoxes):
+                            gameWonAnimation(mainBoard)
+                            pygame.time.wait(2000)
 
-                        # Show the fully unrevealed board for 1 sec
-                        drawBoard(mainBoard, revealedBoxes)
-                        pygame.display.update()
-                        pygame.time.wait(1000)
+                            # Reset the board
+                            mainBoard = getRandomizedBoard()
+                            revealedBoxes = generateRevealedBoxesData(False)
 
-                        # Replay the start game animation
-                        startGameAnimation(mainBoard)
+                            # Show the fully unrevealed board for 1 sec
+                            drawBoard(mainBoard, revealedBoxes)
+                            pygame.display.update()
+                            pygame.time.wait(1000)
 
-                    # Reset first selection var
-                    firstSelection = None
+                            # Replay the start game animation
+                            startGameAnimation(mainBoard)
 
-        # Redraw the screen
+                        # Reset first selection var
+                        firstSelection = None
+
+            # Redraw the screen
+            pygame.display.update()
+            fpsClock.tick(FPS)
+
+
+def showStartScreen(startboard):
+    while True:
+        showTitle()
+        startGameAnimation(startboard)
+
+        drawPressKeyMsg()
+
+        if checkForKeyPress():
+            pygame.event.get()
+            return
+
         pygame.display.update()
         fpsClock.tick(FPS)
+
+
+def showTitle():
+    titleFont = pygame.font.Font("freesansbold.ttf", 30)
+    titleSurf = titleFont.render("MEMORY GAME!", True, reddish, bgColor)
+
+    titleRect = titleSurf.get_rect()
+    titleRect.topright = (windowWidth - 200, windowHeight - 450)
+    displaysurf.blit(titleSurf, titleRect)
+
+
+def drawPressKeyMsg():
+    pressKeySurf = basicFont.render("Press Any Key To Play!", True, white, bgColor)
+    pressKeyRect = pressKeySurf.get_rect()
+    pressKeyRect.topleft = (windowWidth - 400, windowHeight - 70)
+    displaysurf.blit(pressKeySurf, pressKeyRect)
+
+
+def showShuffleMsg():
+    shuffleSurf = basicFont.render("Now shuffling the cards...", True, white, bgColor)
+    shuffleRect = shuffleSurf.get_rect()
+    shuffleRect.topright = (windowWidth - 200, windowHeight - 50)
+    displaysurf.blit(shuffleSurf, shuffleRect)
+
+    pygame.display.update()
+    fpsClock.tick(FPS)
+
+
+def checkForKeyPress():
+    if len(pygame.event.get(QUIT)) > 0:
+        terminate()
+
+    keyUpEvents = pygame.event.get(KEYUP)
+    if len(keyUpEvents) == 0:
+        return None
+    if keyUpEvents[0].key == K_ESCAPE:
+        terminate()
+    return keyUpEvents[0].key
+
+
+def terminate():
+    pygame.quit()
+    sys.exit()
 
 
 # randomly reveal the boxes 8 at a time
